@@ -6,16 +6,18 @@
  * var mod = require('spawn'); // -> 'a thing'
  */
  
-var harvester = require('harvester');
+var strategy = require('strategy');
  
 module.exports = function (spawn) { 
     
     if(spawn.spawning) {
         return;
     }
-
-	if(spawn.energy > harvester.getCost()) {
-	    spawn.createUnitOfType(harvester);
+    
+    var unitType = strategy.getCurrentSpawnTarget(spawn);
+	if(spawn.energy > unitType.getCost()) {
+	    spawn.createUnitOfType(unitType);
+	    Memory.unitCount[unitType.roleName] += 1;
     }
     
 }

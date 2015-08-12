@@ -18,4 +18,13 @@
          dict[TOUGH] = 10;
          return dict[bodyPartName];
      },
+     getBodyPartsCost: function(parts){
+        var cost = 0;
+        var partsIndex = 0;
+        var partsCount = parts.length;
+        for(partsIndex = 0; partsIndex< partsCount; partsIndex++) {
+            cost += this.getBodyPartCost(parts[partsIndex]);
+        }
+        return cost;
+     },
  };

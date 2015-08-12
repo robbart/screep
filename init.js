@@ -10,5 +10,10 @@ module.exports = function () {
 
 	Memory.initialized = true;
 	Memory.unitID = 0;
+	Memory.unitCount = {
+	    'harvester': 0,
+	    'guard': 0,
+	    'harvester': 0
+	};
 	
 }

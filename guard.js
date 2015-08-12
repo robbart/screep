@@ -5,21 +5,16 @@
  * You can import it from another modules like this:
  * var mod = require('builder'); // -> 'a thing'
  */
+ 
+var utils = require('utils');
+
 var guard = {
     roleName: 'guard',
     getBodyParts: function(){
-        return [WORK, CARRY, MOVE];
+        return [MOVE, ATTACK, TOUGH];
     },
     getCost: function(){
-        var costFunc = require("utils").getBodyPartCost;
-        var parts = this.getBodyParts();
-        var cost = 0;
-        var partsIndex = 0;
-        var partsCount = parts.length;
-        for(partsIndex = 0; partsIndex< partsCount; partsIndex++) {
-            cost += costFunc(parts[partsIndex]);
-        }
-        return cost;
+        return utils.getBodyPartsCost(this.getBodyParts());
     },
     getUnitName: function(){
         Memory.unitID++;
@@ -31,11 +26,11 @@ var guard = {
         };
     },
     run: function (creep) { 
-    	var targets = creep.room.find(FIND_HOSTILE_CREEPS);
-    	if(targets.length) {
-    		creep.moveTo(targets[0]);
-    		creep.attack(targets[0]);
-    	}
+        var targets = creep.room.find(FIND_HOSTILE_CREEPS);
+        if(targets.length) {
+            creep.moveTo(targets[0]);
+            creep.attack(targets[0]);
+        }
     }
 };
  

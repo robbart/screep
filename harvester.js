@@ -6,21 +6,15 @@
  * var mod = require('harvester'); // -> 'a thing'
  */
  
+var utils = require('utils');
+ 
 var harvester = {
     roleName: 'harvester',
     getBodyParts: function(){
         return [WORK, CARRY, MOVE];
     },
     getCost: function(){
-        var costFunc = require("utils").getBodyPartCost;
-        var parts = this.getBodyParts();
-        var cost = 0;
-        var partsIndex = 0;
-        var partsCount = parts.length;
-        for(partsIndex = 0; partsIndex< partsCount; partsIndex++) {
-            cost += costFunc(parts[partsIndex]);
-        }
-        return cost;
+        return utils.getBodyPartsCost(this.getBodyParts());
     },
     getUnitName: function(){
         Memory.unitID++;
@@ -32,15 +26,15 @@ var harvester = {
         };
     },
     run: function (creep) { 
-    	if(creep.carry.energy < creep.carryCapacity) {
-    		var sources = creep.room.find(FIND_SOURCES);
-    		creep.moveTo(sources[0]);
-    		creep.harvest(sources[0]);
-    	}
-    	else {
-    		creep.moveTo(Game.spawns.Spawn1);
-    		creep.transferEnergy(Game.spawns.Spawn1)
-    	}
+        if(creep.carry.energy < creep.carryCapacity) {
+            var sources = creep.room.find(FIND_SOURCES);
+            creep.moveTo(sources[0]);
+            creep.harvest(sources[0]);
+        }
+        else {
+            creep.moveTo(Game.spawns.Spawn1);
+            creep.transferEnergy(Game.spawns.Spawn1)
+        }
     }
 };
  
