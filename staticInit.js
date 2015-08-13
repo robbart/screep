@@ -15,13 +15,14 @@
  */
  
 var utils = require('utils');
+var config = require('config');
  
 module.exports = function () { 
-	
-	Room.prototype.initStats = function() {
-	    
-	    var room = this;
-	    var harvesters = room.find(FIND_MY_CREEPS, {filter: utils.isOfUnitType('harvester')});
+    
+    Room.prototype.initStats = function() {
+        
+        var room = this;
+        var harvesters = room.find(FIND_MY_CREEPS, {filter: utils.isOfUnitType('harvester')});
         var guards = room.find(FIND_MY_CREEPS, {filter: utils.isOfUnitType('guard')});
         var builders = room.find(FIND_MY_CREEPS, {filter: utils.isOfUnitType('builder')});
         var resourcePoints = room.find(FIND_SOURCES_ACTIVE);
@@ -52,6 +53,10 @@ module.exports = function () {
         }
         room.memory.resourcePointsCount = resourcePoints.length;
         room.memory.resourceTargeted = resourceTargetedStat;
-	};
-	
+        var maxResourceWorkersCount = resourcePointsCount * config.MaxHarvestersCountPerResourcePoint;
+        room.memory.harvestersFull = harvestersCount >= maxResourceWorkersCount;
+        
+        
+    };
+    
 }

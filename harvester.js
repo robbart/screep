@@ -29,7 +29,7 @@ var harvester = {
     },
     run: function (creep) { 
         
-        if(!creep.memory.state || creep.memory.state == HarvesterState.HARVESTING) {
+        if(creep.memory.state == HarvesterState.HARVEST) {
             
             var targetSourceID = creep.memory.target;
             if(!targetSourceID || targetSourceID.length <= 0) {
@@ -79,9 +79,15 @@ var harvester = {
             if(!transferTarget) {
                 return;
             }
-            creep.moveTo(transferTarget);
-            creep.transferEnergy(transferTarget);
-            if(creep.carry.energy <= 0) {
+            if(transferTarget.energy >= transferTarget.energyCapacity) {
+                creep.memory.state = HarvesterState.UPGRADE;
+                creep.memory.target = creep.room.controller.id;
+            } else {
+                creep.moveTo(transferTarget);
+                creep.transferEnergy(transferTarget);
+            }
+            
+            if(creep.carry.energy < creep.carryCapacity) {
                 creep.memory.state = HarvesterState.HARVEST;
                 creep.memory.target = '';
             }

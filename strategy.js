@@ -21,10 +21,12 @@ module.exports = {
             return guard;
         }
         
-        var resourcePointsCount = targetRoom.memory.resourcePointsCount;
-        var maxResourceWorkersCount = resourcePointsCount * config.MaxHarvestersCountPerResourcePoint;
-        if(targetRoom.memory.unitCount.harvester < maxResourceWorkersCount) {
+        if(!targetRoom.memory.harvestersFull) {
             return harvester;
+        }
+        
+        if(targetRoom.find(FIND_CONSTRUCTION_SITES).length > targetRoom.memory.unitCount['builder']) {
+            return builder;
         }
         
         return null;
