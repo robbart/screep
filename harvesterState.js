@@ -3,13 +3,11 @@
  * module.exports = 'a thing';
  *
  * You can import it from another modules like this:
- * var mod = require('init'); // -> 'a thing'
+ * var mod = require('harvesterState'); // -> 'a thing'
  */
  
-var utils = require('utils');
- 
-module.exports = function () { 
-
-	Memory.initialized = true;
-	
-}
+module.exports = {
+    HARVEST: 0,
+    TRANSFER: 1,
+    UPGRADE: 2
+};

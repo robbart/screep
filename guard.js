@@ -11,22 +11,37 @@ var utils = require('utils');
 var guard = {
     roleName: 'guard',
     getBodyParts: function(){
-        return [MOVE, ATTACK, TOUGH];
+        return [TOUGH, MOVE, MOVE, ATTACK];
     },
     getCost: function(){
         return utils.getBodyPartsCost(this.getBodyParts());
     },
     getUnitName: function(){
-        Memory.unitID++;
-        return this.roleName + Memory.unitID.toString();
+        return this.roleName;
     },
     getMemory: function(){
         return {
-            'role': this.roleName
+            'role': this.roleName,
+            'disabled': false
         };
     },
-    run: function (creep) { 
-        var targets = creep.room.find(FIND_HOSTILE_CREEPS);
+    isDisabled: function(creep){
+        return creep.getActiveBodyparts(MOVE) <= 0;
+    },
+    run: function (creep) {
+        
+        if(this.isDisabled(creep)) {
+            if(!creep.memory.disabled) {
+                creep.memory.disabled = true;
+            }
+            return;
+        }
+        
+        var targets = creep.room.find(FIND_HOSTILE_CREEPS, {
+            filter: function(i){
+                return i.owner.username != 'Source Keeper';
+            }
+        });
         if(targets.length) {
             creep.moveTo(targets[0]);
             creep.attack(targets[0]);

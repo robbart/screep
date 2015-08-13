@@ -3,13 +3,11 @@
  * module.exports = 'a thing';
  *
  * You can import it from another modules like this:
- * var mod = require('init'); // -> 'a thing'
+ * var mod = require('config'); // -> 'a thing'
  */
  
-var utils = require('utils');
- 
-module.exports = function () { 
+var config = {};
 
-	Memory.initialized = true;
-	
-}
+config.MaxHarvestersCountPerResourcePoint = 6;
+
+module.exports = config;

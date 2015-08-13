@@ -7,34 +7,97 @@
  */
  
 var utils = require('utils');
+var HarvesterState = require('harvesterState');
  
 var harvester = {
     roleName: 'harvester',
     getBodyParts: function(){
-        return [WORK, CARRY, MOVE];
+        return [WORK, CARRY, MOVE, MOVE];
     },
     getCost: function(){
         return utils.getBodyPartsCost(this.getBodyParts());
     },
     getUnitName: function(){
-        Memory.unitID++;
-        return this.roleName + Memory.unitID.toString();
+        return this.roleName;
     },
     getMemory: function(){
         return {
-            'role': this.roleName
+            'role': this.roleName,
+            'target': '',
+            'state': HarvesterState.HARVEST,
         };
     },
     run: function (creep) { 
-        if(creep.carry.energy < creep.carryCapacity) {
-            var sources = creep.room.find(FIND_SOURCES);
-            creep.moveTo(sources[0]);
-            creep.harvest(sources[0]);
+        
+        if(!creep.memory.state || creep.memory.state == HarvesterState.HARVESTING) {
+            
+            var targetSourceID = creep.memory.target;
+            if(!targetSourceID || targetSourceID.length <= 0) {
+                // Find a resource point which is being harvested by the least harvesters
+                var minHarverstersCount = -1;
+                var minHarvestersResourceID = '';
+                for(var resourceID in creep.room.memory.resourceTargeted) {
+                    var cnt = creep.room.memory.resourceTargeted[resourceID].length;
+                    if(minHarverstersCount == -1 || cnt < minHarverstersCount) {
+                        minHarverstersCount = cnt;
+                        minHarvestersResourceID = resourceID;
+                    }
+                }
+                creep.memory.target = minHarvestersResourceID;
+                targetSourceID = minHarvestersResourceID;
+                creep.room.memory.resourceTargeted[minHarvestersResourceID].push(creep);
+            }
+            
+            var targetSource = Game.getObjectById(targetSourceID);
+            if(targetSource) {
+                creep.moveTo(targetSource);
+                creep.harvest(targetSource);
+            } else {
+                creep.memory.target = '';
+            }
+            
+            if(creep.carry.energy >= creep.carryCapacity) {
+                
+                // Remove from harvest flag array
+                var arr = creep.room.memory.resourceTargeted[creep.memory.target];
+                arr.splice(arr.indexOf(creep.id), 1);
+                
+                var targetSpawn = Game.spawns.Spawn1;
+                if(targetSpawn.energy < targetSpawn.energyCapacity) {
+                    creep.memory.state = HarvesterState.TRANSFER;
+                    creep.memory.target = targetSpawn.id;
+                } else {
+                    creep.memory.state = HarvesterState.UPGRADE;
+                    creep.memory.target = creep.room.controller.id;
+                }
+                
+            } else {
+                creep.memory.state = HarvesterState.HARVEST;
+            }
+        } else if(creep.memory.state == HarvesterState.TRANSFER) {
+            var transferTarget = Game.getObjectById(creep.memory.target);
+            if(!transferTarget) {
+                return;
+            }
+            creep.moveTo(transferTarget);
+            creep.transferEnergy(transferTarget);
+            if(creep.carry.energy <= 0) {
+                creep.memory.state = HarvesterState.HARVEST;
+                creep.memory.target = '';
+            }
+        } else if(creep.memory.state == HarvesterState.UPGRADE) {
+            var targetRoomController = Game.getObjectById(creep.memory.target);
+            if(!targetRoomController) {
+                return;
+            }
+            creep.moveTo(targetRoomController);
+            creep.upgradeController(targetRoomController);
+            if(creep.carry.energy <= 0) {
+                creep.memory.state = HarvesterState.HARVEST;
+                creep.memory.target = '';
+            }
         }
-        else {
-            creep.moveTo(Game.spawns.Spawn1);
-            creep.transferEnergy(Game.spawns.Spawn1)
-        }
+
     }
 };
  

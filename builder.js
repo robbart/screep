@@ -17,8 +17,7 @@ var builder = {
         return utils.getBodyPartsCost(this.getBodyParts());
     },
     getUnitName: function(){
-        Memory.unitID++;
-        return this.roleName + Memory.unitID.toString();
+        return this.roleName;
     },
     getMemory: function(){
         return {

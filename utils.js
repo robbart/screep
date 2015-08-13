@@ -7,7 +7,7 @@
  */
  
  module.exports = {
-     getBodyPartCost: function(bodyPartName){
+     getBodyPartCost: function(bodyPartName) {
          var dict = {};
          dict[MOVE] = 50;
          dict[WORK] = 100;
@@ -18,7 +18,7 @@
          dict[TOUGH] = 10;
          return dict[bodyPartName];
      },
-     getBodyPartsCost: function(parts){
+     getBodyPartsCost: function(parts) {
         var cost = 0;
         var partsIndex = 0;
         var partsCount = parts.length;
@@ -26,5 +26,10 @@
             cost += this.getBodyPartCost(parts[partsIndex]);
         }
         return cost;
+     },
+     isOfUnitType: function(unitTypeName){
+         return function(creep){
+             return creep.memory.role == unitTypeName;
+         };
      },
  };

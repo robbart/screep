@@ -6,6 +6,12 @@
  * var mod = require('spawn'); // -> 'a thing'
  */
  
+Spawn.prototype.createUnitOfType = function(unitType, nameSuffix) {
+    if(!nameSuffix) nameSuffix = "";
+    return this.createCreep(unitType.getBodyParts(), unitType.getUnitName() + nameSuffix, unitType.getMemory());
+};
+
+ 
 var strategy = require('strategy');
  
 module.exports = function (spawn) { 
@@ -15,9 +21,12 @@ module.exports = function (spawn) {
     }
     
     var unitType = strategy.getCurrentSpawnTarget(spawn);
-	if(spawn.energy > unitType.getCost()) {
-	    spawn.createUnitOfType(unitType);
-	    Memory.unitCount[unitType.roleName] += 1;
+
+    if(!unitType)
+        return;
+        
+	if(spawn.energy >= unitType.getCost()) {
+	    spawn.createUnitOfType(unitType, new Date().getTime());
     }
     
 }
