@@ -7,14 +7,24 @@
  */
  
 var utils = require('utils');
+var config = require('config');
 
 var guard = {
     roleName: 'guard',
-    getBodyParts: function(){
-        return [TOUGH, MOVE, MOVE, ATTACK];
+    getBodyParts: function(maxEnergy){
+        var levels = config.unitConfig[this.roleName].levels;
+        var levelIndex = levels.length - 1;
+        for(levelIndex = levels.length - 1; levelIndex >= 0; levelIndex--) {
+            var levelConfig = levels[levelIndex];
+            var levelCost = utils.getBodyPartsCost(levelConfig.parts);
+            if(levelCost <= maxEnergy) {
+                return levelConfig.parts;
+            }
+        }
+        return levels[0].parts;
     },
-    getCost: function(){
-        return utils.getBodyPartsCost(this.getBodyParts());
+    getCost: function(maxEnergy){
+        return utils.getBodyPartsCost(this.getBodyParts(maxEnergy));
     },
     getUnitName: function(){
         return this.roleName;

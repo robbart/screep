@@ -32,4 +32,9 @@
              return creep.memory.role == unitTypeName;
          };
      },
+     isStructure: function(structureType){
+         return function(structure){
+             return structure.structureType == structureType;
+         };
+     },
  };

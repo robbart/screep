@@ -19,12 +19,43 @@ var config = require('config');
  
 module.exports = function () { 
     
+    Spawn.prototype.createUnitOfType = function(unitType, nameSuffix, maxEnergy) {
+        if(!nameSuffix) nameSuffix = "";
+        return this.createCreep(unitType.getBodyParts(maxEnergy), unitType.getUnitName() + nameSuffix, unitType.getMemory());
+    };
+    
+    Spawn.prototype.getEnergyTotal = function(){
+        var extensionsTotal = 0;
+        var roomExtensions = this.room.find(FIND_MY_STRUCTURES, {filter:utils.isStructure(STRUCTURE_EXTENSION)});
+        var roomExtensionIndex;
+        var roomExtensionsCount = roomExtensions.length;
+        for(roomExtensionIndex = 0; roomExtensionIndex < roomExtensionsCount; roomExtensionIndex++) {
+            extensionsTotal += roomExtensions[roomExtensionIndex].energy;
+        }
+        return extensionsTotal + this.energy;
+    };
+    
+    Spawn.prototype.getEnergyCapacityTotal = function(){
+        var extensionsTotal = 0;
+        var roomExtensions = this.room.find(FIND_MY_STRUCTURES, {filter:utils.isStructure(STRUCTURE_EXTENSION)});
+        var roomExtensionIndex;
+        var roomExtensionsCount = roomExtensions.length;
+        for(roomExtensionIndex = 0; roomExtensionIndex < roomExtensionsCount; roomExtensionIndex++) {
+            extensionsTotal += roomExtensions[roomExtensionIndex].energyCapacity;
+        }
+        return extensionsTotal + this.energyCapacity;
+    };
+    
     Room.prototype.initStats = function() {
         
         var room = this;
         var harvesters = room.find(FIND_MY_CREEPS, {filter: utils.isOfUnitType('harvester')});
         var guards = room.find(FIND_MY_CREEPS, {filter: utils.isOfUnitType('guard')});
         var builders = room.find(FIND_MY_CREEPS, {filter: utils.isOfUnitType('builder')});
+        var repairers = room.find(FIND_MY_CREEPS, {filter: utils.isOfUnitType('repairer')});
+        var roomStructures = room.find(FIND_STRUCTURES, {filter: function(st){
+            return st.my || st.structureType == STRUCTURE_ROAD;
+        }});
         var resourcePoints = room.find(FIND_SOURCES_ACTIVE);
         
         // Collect room stats
@@ -32,6 +63,7 @@ module.exports = function () {
             'harvester': harvesters.length,
             'guard': guards.length,
             'builder': builders.length,
+            'repairer': repairers.length,
         };
         
         // Collect resource point stats
@@ -56,6 +88,14 @@ module.exports = function () {
         var maxResourceWorkersCount = resourcePointsCount * config.MaxHarvestersCountPerResourcePoint;
         room.memory.harvestersFull = harvestersCount >= maxResourceWorkersCount;
         
+        room.memory.repairersNeeded = 0;
+        var roomStructureIndex;
+        var roomStructuresCount = roomStructures.length;
+        for(roomStructureIndex = 0; roomStructureIndex < roomStructuresCount; roomStructureIndex++) {
+            var roomStructure = roomStructures[roomStructureIndex];
+            room.memory.repairersNeeded += config.getRepairerRatioForStructureType(roomStructure.structureType);
+        }
+        room.memory.repairersNeeded = parseInt(room.memory.repairersNeeded);
         
     };
     

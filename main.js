@@ -5,6 +5,7 @@
 var harvester = require('harvester');
 var builder = require('builder');
 var guard = require('guard');
+var repairer = require('repairer');
 var spawn = require('spawn');
 var utils = require('utils');
 
@@ -55,6 +56,10 @@ for(var roomName in Game.rooms) {
     	
     	if(creep.memory.role == 'guard') {
         	guard.run(creep);
+        }
+        
+        if(creep.memory.role == 'repairer') {
+        	repairer.run(creep);
         }
     }
 }

@@ -1,19 +1,11 @@
-/*
- * Module code goes here. Use 'module.exports' to export things:
- * module.exports = 'a thing';
- *
- * You can import it from another modules like this:
- * var mod = require('builder'); // -> 'a thing'
- */
- 
+
 var utils = require('utils');
-var BuilderState = require('builderState');
+var RepairerState = require('repairerState');
 var harvester = require('harvester');
-var repairer = require('repairer');
 var config = require('config');
 
-var builder = {
-    roleName: 'builder',
+var repairer = {
+    roleName: 'repairer',
     getBodyParts: function(maxEnergy){
         var levels = config.unitConfig[this.roleName].levels;
         var levelIndex = levels.length - 1;
@@ -35,7 +27,7 @@ var builder = {
     getMemory: function(){
         return {
             'role': this.roleName,
-            'state': BuilderState.HARVEST_FROM_SPAWN,
+            'state': RepairerState.HARVEST_FROM_SPAWN,
             'target': '',
         };
     },
@@ -73,7 +65,7 @@ var builder = {
         for(roomSpawnIndex = 0; roomSpawnIndex < roomSpawnsCount; roomSpawnIndex++) {
             var targetSpawn = roomSpawns[roomSpawnIndex];
             if(targetSpawn.energy > config.MinEnergyBuilderGetFromSpawn) {
-                creep.memory.state = BuilderState.HARVEST_FROM_SPAWN;
+                creep.memory.state = RepairerState.HARVEST_FROM_SPAWN;
                 creep.memory.target = targetSpawn.id;
                 return targetSpawn.id;
             }
@@ -97,7 +89,7 @@ var builder = {
             return null;
         
         roomExtension = availableExtensions[parseInt(Math.random() * availableExtensions.length)];
-        creep.memory.state = BuilderState.HARVEST_FROM_EXTENSION;
+        creep.memory.state = RepairerState.HARVEST_FROM_EXTENSION;
         creep.memory.target = roomExtension.id;
         return roomExtension.id;
     },
@@ -124,92 +116,100 @@ var builder = {
             return null;
         }
         
-        creep.memory.state = BuilderState.HARVEST_FROM_RESOURCE;
+        creep.memory.state = RepairerState.HARVEST_FROM_RESOURCE;
         creep.memory.target = resourcePointID;
         return resourcePointID;
     },
+    findRepairTarget: function(creep){
+        var roomStructuresNeedsRepair = [];
+        var roomStructures = creep.room.find(FIND_STRUCTURES, {filter:function(st){
+            return st.structureType == 'road' || st.my;
+        }});
+        var roomStructureIndex;
+        var roomStructuresCount = roomStructures.length;
+        for(roomStructureIndex = 0; roomStructureIndex < roomStructuresCount; roomStructureIndex++) {
+            var roomStructure = roomStructures[roomStructureIndex];
+            if(roomStructure.hits < roomStructure.hitsMax) {
+                roomStructuresNeedsRepair.push({
+                    structure: roomStructure,
+                    priority: config.getRepairPriority(roomStructure.structureType, roomStructure.hits, roomStructure.hitsMax, creep.pos.x - roomStructure.pos.x, creep.pos.y - roomStructure.pos.y)
+                });
+            }
+        }
+        
+        if(roomStructuresNeedsRepair.length <= 0) {
+            return null;
+        }
+        
+        roomStructuresNeedsRepair.sort(function(stPairA, stPairB){
+            return stPairA.priority - stPairB.priority;
+        });
+        
+        creep.memory.state = RepairerState.REPAIR;
+        creep.memory.target = roomStructuresNeedsRepair[0].structure.id;
+        
+        return creep.memory.target;
+    },
     run: function (creep) { 
-        if(creep.memory.state == BuilderState.TRANSFER) {
+        if(creep.memory.state == RepairerState.REPAIR) {
             
-            // Find the first construction site and go go go
-            var targets = creep.room.find(FIND_CONSTRUCTION_SITES);
-            if(targets.length) {
-                var buildTarget = targets[0];
-                creep.moveTo(buildTarget);
-                var buildScheduled = false;
-                if( 0 == creep.build(buildTarget)) {
-                    buildScheduled = true;
-                    creep.say("work");
+            // Go repair!
+            var targetID = creep.memory.target;
+            if(!targetID || targetID.length <= 0) {
+                if(!this.findRepairTarget(creep)) {
+                    // Cannot find new target to repair. Transform to harvester.
+                    creep.memory = harvester.getMemory();
                 }
-                
-                if(creep.carry.energy <= 0) {
-                    this.findHarvestTarget(creep);
-                }
-                
-                if(buildScheduled && (buildTarget.structureType == STRUCTURE_RAMPART || buildTarget.structureType == STRUCTURE_WALL)) {
-                    creep.memory.state = BuilderState.REPAIR_WALL;
-                    creep.memory.target =  buildTarget.pos.x + "_" +  buildTarget.pos.y;
-                }
-                
-            } else {
-                // After all construction sites are finished, transform itself to a normal repairer
-                creep.memory = repairer.getMemory();
             }
             
-        } else if(creep.memory.state == BuilderState.REPAIR_WALL) {
-            
-            var target = creep.memory.target;
-            var targetPos = target.split("_");
-            if(targetPos.length != 2) {
-                creep.memory.state = BuilderState.TRANSFER;
+            var target = Game.getObjectById(targetID);
+            if(!target) {
                 return;
-            }
-            
-            var structuresAtTargetPos = creep.room.lookForAt('structure', Number(targetPos[0]), Number(targetPos[1]));
-            var repairTarget = structuresAtTargetPos[0];
-            if(!repairTarget) {
-                creep.say("404");
-                creep.memory.state = BuilderState.TRANSFER;
-                return;
-            }
-            
-            creep.moveTo(repairTarget);
-            if(0 == creep.repair(repairTarget)) {
-                creep.say("repair");
             }
             
             if(creep.carry.energy <= 0) {
                 this.findHarvestTarget(creep);
+                return;
             }
             
-            if(repairTarget.hits >= config.RampartHitsMax) {
-                creep.memory.state = BuilderState.TRANSFER;
+            if(target.hits >= target.hitsMax) {
+                if(!this.findRepairTarget(creep)) {
+                    creep.memory = harvester.getMemory();
+                }
                 return;
+            }
+            
+            creep.moveTo(target);
+            if(0 == creep.repair(target)) {
+                creep.say("repair");
+                this.findRepairTarget(creep);
             }
             
         } else {
             
             var target;
             
-            if(creep.memory.state == BuilderState.HARVEST_FROM_SPAWN) {
+            if(creep.memory.state == RepairerState.HARVEST_FROM_SPAWN) {
             
                 target = Game.getObjectById(creep.memory.target);
                 if(!target) {
                     this.findHarvestTarget(creep);
                     return;
                 }
+                
                 creep.moveTo(target);
                 target.transferEnergy(creep);
                 
                 if(creep.carry.energy >= creep.carryCapacity) {
-                    creep.memory.state = BuilderState.TRANSFER;
+                    var repairTargetID = this.findRepairTarget(creep);
+                    return;
                 }
                 
                 if(target.energy <= config.MinEnergyBuilderGetFromSpawn) {
                     this.findHarvestTarget(creep);
                 }
                 
-            } else if(creep.memory.state == BuilderState.HARVEST_FROM_EXTENSION) {
+            } else if(creep.memory.state == RepairerState.HARVEST_FROM_EXTENSION) {
                 
                 target = Game.getObjectById(creep.memory.target);
                 if(!target) {
@@ -221,14 +221,15 @@ var builder = {
                 target.transferEnergy(creep);
                 
                 if(creep.carry.energy >= creep.carryCapacity) {
-                    creep.memory.state = BuilderState.TRANSFER;
+                    this.findRepairTarget(creep);
+                    return;
                 }
                 
                 if(target.energy <= config.MinEnergyBuilderGetFromExtension) {
                     this.findHarvestTarget(creep);
                 }
                 
-            } else if(creep.memory.state == BuilderState.HARVEST_FROM_RESOURCE) {
+            } else if(creep.memory.state == RepairerState.HARVEST_FROM_RESOURCE) {
                 var targetSource = Game.getObjectById(creep.memory.target);
                 if(!targetSource) {
                     this.findHarvestTarget(creep);
@@ -238,11 +239,12 @@ var builder = {
                 creep.moveTo(targetSource);
                 creep.harvest(targetSource);
                 if(creep.carry.energy >= creep.carryCapacity) {
-                    creep.memory.state = BuilderState.TRANSFER;
+                    this.findRepairTarget(creep);
+                    return;
                 }
             }
         }
     }
 };
  
-module.exports = builder;
+module.exports = repairer;

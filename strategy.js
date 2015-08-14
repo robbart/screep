@@ -9,6 +9,7 @@
 var harvester = require('harvester');
 var guard = require('guard');
 var builder = require('builder');
+var repairer = require('repairer');
 var config = require('config');
  
 module.exports = {
@@ -25,8 +26,14 @@ module.exports = {
             return harvester;
         }
         
-        if(targetRoom.find(FIND_CONSTRUCTION_SITES).length > targetRoom.memory.unitCount['builder']) {
+        var buildersCurrent = targetRoom.memory.unitCount['builder'];
+        if(buildersCurrent < config.MaxBuildersNum && targetRoom.find(FIND_CONSTRUCTION_SITES).length > buildersCurrent) {
             return builder;
+        }
+        
+        var repairersCount = targetRoom.memory.unitCount['repairer'];
+        if(repairersCount < targetRoom.memory.repairersNeeded) {
+            return repairer;
         }
         
         return null;
